@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<package>
+  <name>speed_control</name>
+  <version>0.0.1</version>
+  <description>A point to point controller from x1 y1 t1 to x2 y2 t2</description>
+
+  <maintainer email="mirko.ferrati@gmail.com">Mirko Ferrati</maintainer>
+  
+  <license>BSD</license>
+  <author email="mirko.ferrati@gmail.com">Mirko Ferrati</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf</run_depend>
+
+</package>
