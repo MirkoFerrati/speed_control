@@ -28,11 +28,13 @@ enum class deactivate_reason{
 };
 
 
-class waypoints_follower:public abstract_controller
+class waypoints_follower//:public abstract_controller
 {    
 private:
     dynamic_reconfigure::Server<speed_control::config_toolConfig> server;
     dynamic_reconfigure::Server<speed_control::config_toolConfig>::CallbackType f;
+    ros::NodeHandle n;
+    
     double max_linear_speed;
     double max_angular_speed;
     std::list<geometry_msgs::Point> targets;
@@ -51,21 +53,31 @@ private:
     double max_speed;
     double reached_threshold;
     bool turning;
-    bool reached_next_target;
     bool straight;
+    double desired_speed;
+    double desired_heading;
+    ros::Publisher comand_pub;
+    bool localized;
+    double kp1;
+    double kp2;
+    double ki1;
+    double ki2;
+    geometry_msgs::Twist twist;
 public:
     waypoints_follower(double max_speed, double reached_threshold);
     void setTargetCallback(const geometry_msgs::PolygonConstPtr& targets);
     void config_callback(speed_control::config_toolConfig &config, uint32_t level);
     void command_manager(const std_msgs::StringConstPtr & msg);
+    void setPosition(double x, double y, double theta);
     
     void init();
     void run();
     
 private:
     void target_manager(const geometry_msgs::Point& msg);
-    void setPosition(double x, double y, double theta);
     double distance(const geometry_msgs::Point& target) const;
+    double distance(const geometry_msgs::Point& p1,const geometry_msgs::Point& p2) const;
+    
     bool reached(const geometry_msgs::Point& target) const;
     void activate();
     void deactivate(deactivate_reason USER_DEACTIVATE);

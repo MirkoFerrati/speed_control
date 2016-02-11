@@ -17,6 +17,7 @@ void waypoints_follower::config_callback(speed_control::config_toolConfig &confi
   ki2 = config.ki2;  
   max_linear_speed = config.Max_linear_speed;
   max_angular_speed = config.Max_angular_speed;
+  config.Apply=false;
 }
 
 void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
@@ -57,49 +58,40 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     command_sub = n.subscribe<std_msgs::String>("command",1,&waypoints_follower::command_manager,this);
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
+    kp1=0.5;
+    kp2=0.5;
+    ki1=0.5;
+    ki2=0.5;
+    
 }
 
     
 void waypoints_follower::init()
 {
-    abstract_controller::init();
     f = boost::bind(&waypoints_follower::config_callback, this, _1, _2);   
     server.setCallback(f);
     target_sub = this->n.subscribe<geometry_msgs::Polygon>("targets",10,&waypoints_follower::setTargetCallback,this);
+    comand_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);  
+    straight=turning=false;
 }
 
 
 void waypoints_follower::run()
 {
-    ros::Rate loop_rate(10);
     
     const double MAX_TWIST_LINEAR = 0.5;
     const double MAX_TWIST_ANGULAR = 0.5;
     const double TURNING_RADIUS=0.3;
-    while (ros::ok())
-    {
-        loop_rate.sleep();        
-        if (!active) continue;
-        ROS_INFO("active");
+
+        if (!active) return;
+//         ROS_INFO("active");
         
         if (!localized)
         {
             ROS_WARN("waiting for localization");
-            continue;
+            return;
         }
-        tf::Quaternion q(current_pos.pose.pose.orientation.x, current_pos.pose.pose.orientation.y, current_pos.pose.pose.orientation.z, current_pos.pose.pose.orientation.w);    
-        double yaw=tf::getYaw(q);
-        setPosition(current_pos.pose.pose.position.x,current_pos.pose.pose.position.y,yaw);
-        if (distance(next_target)<TURNING_RADIUS && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
-        {
-            //TODO start turning along a circle
-            //Find next heading, circle radius, circle length, circle angle
-            turning = true;
-            //TODO
-            //We kind of reached the target, we should switch to the next one, but only after the turning ended
-            reached_next_target = true;
-        }
-        if (reached_next_target || start_new_target) //Change of target!
+        if (reached(next_target) || start_new_target) //Change of target!
         {
             ROS_INFO("starting new target");
             start_new_target = false;
@@ -115,28 +107,104 @@ void waypoints_follower::run()
             geometry_msgs::Pose2D current_pose;
             current_pose.x=x;
             current_pose.y=y;            
-        
+            
             xtarget = next_target.x;
             ytarget = next_target.y;
-            reached_next_target=false;
+            straight=true;
         }
+        /* More complex implementation, for the future, it chooses speed and angular radius
+        if (distance(next_target)<TURNING_RADIUS && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
+        {
+            //TODO start turning along a circle
+            //Find next heading, circle radius, circle length, circle angle
+            double current_heading=theta;
+            double heading=atan2(ytarget-targets.front().y,xtarget-targets.front().x);
+            double current_speed=twist.linear.x;
+            double next_speed=distance(next_target,targets.front())/(targets.front().z-next_target.z);
+            double delta_heading=heading-current_heading;
+            bool rotate_left;
+            if((0<delta_heading && delta_heading<M_PI) || (-2*M_PI<delta_heading && delta_heading<-M_PI ))
+                rotate_left=true;
+            else rotate_left=false;
+            bool ok=false;
+            double desired_speed=(current_speed+next_speed)/2.0;
+            double radius=max_turning_radius/10.0;
+            double alpha=2*radius/wheel_distance;
+            while(!ok)
+            {
+                double right_wheel_speed=-desired_speed*(1/alpha+1);
+                if (right_wheel_speed>max_speed) //Too fast, slow down
+                {
+                    right_wheel_speed=max_speed;
+                }
+                double left_wheel_speed=2*desired_speed-right_wheel_speed;
+                if (left_wheel_speed>max_speed) //Also too fast, change speed and turning radius
+                {
+                    desired_speed=0.9*desired_speed;
+                    radius=radius+max_turning_radius*0.1;
+                }
+                else
+                {
+                    ok=true;
+                }
+            }
+            turning = true;
+            twist.linear.x=desired_speed;
+            twist.angular.z=(right_wheel_speed-left_wheel_speed)/2.0;
+        }
+        */
+        if (distance(next_target)<TURNING_RADIUS && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
+        {
+            turning=true;
+            straight=false;
+            desired_heading=atan2(ytarget-targets.front().y,xtarget-targets.front().x);
+            double current_speed=twist.linear.x;
+            double next_speed=distance(next_target,targets.front())/(targets.front().z-next_target.z);
+            desired_speed=(current_speed+next_speed)/2.0;
+            twist.linear.x=desired_speed;
+            
+        }
+        double length = distance(next_target);
         if (turning)
         {
             //either keep publishing same rotation and speed or feedback on the circle information
-            
+            twist.linear.x=desired_speed*(1+ki1*(TURNING_RADIUS-length));
+            twist.angular.z=ki2*sin(desired_heading-theta);
+            if (fabs(desired_heading-theta)<0.1)
+            {
+                //We kind of reached the desired heading, we should switch to the next target and stop turning
+                
+                ROS_INFO("starting new target");
+                std::unique_lock<std::mutex>(targets_mtx);
+                
+                next_target = targets.front();
+                targets.pop_front();
+                geometry_msgs::Pose2D current_pose;
+                current_pose.x=x;
+                current_pose.y=y;            
+                
+                xtarget = next_target.x;
+                ytarget = next_target.y;
+                straight=true;
+                turning=false;
+            }
         }
-        else if (straight)
+        double theta_err;
+        if (straight)
         {
-            double length=sqrt(pow(ytarget-y,2)+pow(xtarget-x,2));
-            twist.linear.x=kp1*length>max_speed?max_speed:kp1*length;
-            twist.angular.z=kp2*sin(atan2(ytarget-y,xtarget-x)-theta);
-            ROS_DEBUG_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y);
-        }
-        comand_pub.publish(twist);
 
-        ros::spinOnce();
+            double delta = next_target.z - ros::Time::now().toSec();
+            twist.linear.x=kp1*length/delta;
+            theta_err=atan2(ytarget-y,xtarget-x)-theta;
+            if (fabs(fabs(theta_err)-M_PI)<0.1) theta_err=theta_err+0.1;
+            twist.angular.z=-kp2*sin(theta_err);
+        }
+        twist.linear.x = std::min(twist.linear.x,MAX_TWIST_LINEAR);
+        comand_pub.publish(twist);
+        ROS_DEBUG_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
+        ROS_DEBUG_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
         
-    }
+        ros::spinOnce();
 }
 
 void waypoints_follower::command_manager(const std_msgs::StringConstPtr & msg)
@@ -153,6 +221,7 @@ void waypoints_follower::setPosition(double x, double y, double theta)
     this->x=x;
     this->y=y;
     this->theta=theta;
+    localized=true;
 }
 
 void waypoints_follower::activate()
@@ -201,6 +270,12 @@ void waypoints_follower::deactivate(deactivate_reason r)
     twist.linear.x=0;
     twist.angular.z=0;
     comand_pub.publish(twist);
+}
+
+double waypoints_follower::distance(const geometry_msgs::Point& p1,const geometry_msgs::Point& p2) const
+{
+    double distance = sqrt(pow(p1.y-p2.y,2)+pow(p1.x-p2.x,2));
+    return distance;
 }
 
 double waypoints_follower::distance(const geometry_msgs::Point& target) const
