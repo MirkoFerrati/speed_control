@@ -6,6 +6,7 @@
 #include <math.h>
 #include <mutex>
 #include <speed_control/config_toolConfig.h>
+#include <mrtstar/locking.h>
 
 
 void waypoints_follower::config_callback(speed_control::config_toolConfig &config, uint32_t level) {
@@ -35,6 +36,22 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
     if (!active)
         activate();
 }
+
+void waypoints_follower::setTargetCallback(const mrtstar::locking::ConstPtr& targets)
+{
+    std::unique_lock<std::mutex>(targets_mtx);
+    if (targets->command=="switch")
+        this->targets.clear();
+    for (auto target:targets->occupied_nodes)
+    {
+        geometry_msgs::Point target_temp;
+        target_temp.x=target.x;
+        target_temp.y=target.y;
+        target_temp.z=(target.t_start.toSec()+target.t_end.toSec())*0.5;
+        target_manager(target_temp);
+    }
+}
+
 
 //TODO why does polygon use Point32 instead of Point?!?!
 void waypoints_follower::setTargetCallback(const geometry_msgs::PolygonConstPtr& targets)
