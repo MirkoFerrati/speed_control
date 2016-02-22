@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         bool localized=false;
         tf::StampedTransform transform;
         try{
-            listener.lookupTransform(prefix+"odom",prefix+"base_link", 
+            listener.lookupTransform("map",prefix+"base_link", 
                                      ros::Time(0), transform);
             localized=true;
         }
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
         double roll, pitch, yaw;
         tf::Matrix3x3(transform.getRotation()).getRPY(roll, pitch, yaw);
         
-        if (localized) 
+        if (localized)
         {
             controller.setPosition(o.getX(),o.getY(),yaw);
             controller.run();

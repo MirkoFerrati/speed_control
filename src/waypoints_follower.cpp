@@ -87,7 +87,8 @@ void waypoints_follower::init()
 {
     f = boost::bind(&waypoints_follower::config_callback, this, _1, _2);   
     server.setCallback(f);
-    target_sub = this->n.subscribe<geometry_msgs::Polygon>("targets",10,&waypoints_follower::setTargetCallback,this);
+//     target_sub = this->n.subscribe<geometry_msgs::Polygon>("targets",10,&waypoints_follower::setTargetCallback,this);
+    target_sub = this->n.subscribe<mrtstar::locking>("targets",10,&waypoints_follower::setTargetCallback,this);
     comand_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);  
     straight=turning=false;
 }
