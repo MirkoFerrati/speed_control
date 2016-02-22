@@ -173,7 +173,7 @@ void waypoints_follower::run()
             twist.angular.z=(right_wheel_speed-left_wheel_speed)/2.0;
         }
         */
-        if (distance(next_target)<TURNING_RADIUS && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
+        if (distance(next_target)<TURNING_RADIUS && distance(next_target)>reached_threshold && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
         {
             turning=true;
             straight=false;
@@ -222,12 +222,16 @@ void waypoints_follower::run()
             if (delta<0)
             {
                 twist.linear.x = 0;
-                return;
+                ROS_WARN_STREAM("Target time is in the past, stopping");
+                deactivate(deactivate_reason::GLOBAL_TARGET_NOT_REACHED);
             }
-            twist.linear.x=length/delta;
-            theta_err=atan2(ytarget-y,xtarget-x)-theta;
-            if (fabs(fabs(theta_err)-M_PI)<0.1) theta_err=theta_err+0.1;
-            twist.angular.z=-kp2*sin(theta_err);
+            else
+            {
+                twist.linear.x=length/delta*1.1;
+                theta_err=atan2(ytarget-y,xtarget-x)-theta;
+                if (fabs(fabs(theta_err)-M_PI)<0.1) theta_err=theta_err+0.1;
+                twist.angular.z=-kp2*sin(theta_err);
+            }
         }
         twist.linear.x = std::min(twist.linear.x,MAX_TWIST_LINEAR);
         comand_pub.publish(twist);
@@ -319,5 +323,7 @@ double waypoints_follower::distance(const geometry_msgs::Point& target) const
 
 bool waypoints_follower::reached(const geometry_msgs::Point& target) const
 {
-    return distance(target) < reached_threshold;    
+    bool ok_2d = distance(target) < reached_threshold;    
+    bool ok_time = fabs(ros::Time::now().toSec()-target.z)<0.3;
+    return ok_2d && ok_time;
 }
