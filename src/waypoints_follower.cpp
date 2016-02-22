@@ -23,7 +23,7 @@ void waypoints_follower::config_callback(speed_control::config_toolConfig &confi
 
 void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
 {
-    ROS_INFO("target manager callback");
+    ROS_INFO_STREAM("target manager callback "<<int(ros::Time::now().toSec())%1000);
     if (targets.size()>0)
     {
         if (fabs(targets.back().x-msg.x)<0.01 && fabs(targets.back().y-msg.y)<0.01 && fabs(targets.back().z-msg.z)<0.01)
@@ -31,7 +31,7 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
             return; //same target as before, reject
         }
     }
-    ROS_INFO("new target added");
+    ROS_INFO_STREAM("new target added "<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
     targets.push_back(msg);
     if (!active)
         activate();
@@ -41,7 +41,10 @@ void waypoints_follower::setTargetCallback(const mrtstar::locking::ConstPtr& tar
 {
     std::unique_lock<std::mutex>(targets_mtx);
     if (targets->command=="switch")
+    {
         this->targets.clear();
+        ROS_INFO("cleared target lists");
+    }
     for (auto target:targets->occupied_nodes)
     {
         geometry_msgs::Point target_temp;
@@ -117,7 +120,6 @@ void waypoints_follower::run()
                 deactivate(deactivate_reason::NO_MORE_TARGETS);
                 return;
             }
-            ROS_INFO("starting new target");
             
             std::unique_lock<std::mutex>(targets_mtx);
             
@@ -129,6 +131,8 @@ void waypoints_follower::run()
             
             xtarget = next_target.x;
             ytarget = next_target.y;
+            ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
+            
             straight=true;
             turning=false;
         }
@@ -182,8 +186,7 @@ void waypoints_follower::run()
             double next_speed=distance(next_target,targets.front())/(targets.front().z-next_target.z);
             desired_speed=(current_speed+next_speed)/2.0;
             twist.linear.x=desired_speed;
-            ROS_INFO("starting turning");
-            
+            ROS_INFO_STREAM("starting turning "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
         }
         double length = distance(next_target);
         double theta_err;
@@ -198,7 +201,7 @@ void waypoints_follower::run()
             {
                 //We kind of reached the desired heading, we should switch to the next target and stop turning
                 
-                ROS_INFO("starting new target");
+                ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
                 std::unique_lock<std::mutex>(targets_mtx);
                 
                 next_target = targets.front();
