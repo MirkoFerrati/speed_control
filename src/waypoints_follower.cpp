@@ -102,7 +102,7 @@ void waypoints_follower::run()
     
     const double MAX_TWIST_LINEAR = 1.0;
     const double MAX_TWIST_ANGULAR = 0.5;
-    const double TURNING_RADIUS=1.0;
+    const double TURNING_RADIUS=0.4;
 
         if (!active) return;
 //         ROS_INFO("active");
@@ -184,6 +184,7 @@ void waypoints_follower::run()
             desired_heading=atan2(targets.front().y-ytarget,targets.front().x-xtarget);
             double current_speed=twist.linear.x;
             double next_speed=distance(next_target,targets.front())/(targets.front().z-next_target.z);
+            if(desired_speed>MAX_TWIST_LINEAR) desired_speed=MAX_TWIST_LINEAR;
             desired_speed=(current_speed+next_speed)/2.0;
             twist.linear.x=desired_speed;
             ROS_INFO_STREAM("starting turning "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
@@ -220,9 +221,8 @@ void waypoints_follower::run()
         }
         if (straight)
         {
-            
             double delta = next_target.z - ros::Time::now().toSec();
-            if (delta<0)
+            if (delta<-0)
             {
                 twist.linear.x = 0;
                 ROS_WARN_STREAM("Target time is in the past, stopping");
