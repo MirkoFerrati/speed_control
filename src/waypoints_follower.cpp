@@ -31,6 +31,17 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
             return; //same target as before, reject
         }
     }
+    if (msg.z<next_target.z+0.3)
+    {
+        ROS_WARN_STREAM("skipping new target because it is before current target"<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
+        return;
+    }
+    if (msg.x==next_target.x && msg.y == next_target.y)
+    {
+        ROS_WARN_STREAM("skipping new target because it is the same as the current one, changing time");
+        next_target.z=msg.z;
+        return;
+    }
     ROS_INFO_STREAM("new target added "<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
     targets.push_back(msg);
     if (!active)
@@ -78,7 +89,7 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     command_sub = n.subscribe<std_msgs::String>("command",1,&waypoints_follower::command_manager,this);
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
-    kp1=0.5;
+    kp1=0.8;
     kp2=1.5;
     ki1=0.5;
     ki2=1.5;
@@ -187,7 +198,7 @@ void waypoints_follower::run()
             if(desired_speed>MAX_TWIST_LINEAR) desired_speed=MAX_TWIST_LINEAR;
             desired_speed=(current_speed+next_speed)/2.0;
             twist.linear.x=desired_speed;
-            ROS_INFO_STREAM("starting turning "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
+            ROS_INFO_STREAM("starting turning from near "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000<< "to next target");
         }
         double length = distance(next_target);
         double theta_err;
@@ -198,11 +209,10 @@ void waypoints_follower::run()
             twist.linear.x=desired_speed*(1+ki1*(TURNING_RADIUS-length));
             twist.angular.z=-ki2*sin(desired_heading-theta);
             theta_err=desired_heading-theta;
-            if (fabs(desired_heading-theta)<0.1 )//|| distance())
+            if (fabs(desired_heading-theta)<0.2 )//|| distance())
             {
                 //We kind of reached the desired heading, we should switch to the next target and stop turning
                 
-                ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
                 std::unique_lock<std::mutex>(targets_mtx);
                 
                 next_target = targets.front();
@@ -214,6 +224,8 @@ void waypoints_follower::run()
                 xtarget = next_target.x;
                 ytarget = next_target.y;
                 straight=true;
+                ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
+                
                 ROS_INFO("starting straight");
                 
                 turning=false;
