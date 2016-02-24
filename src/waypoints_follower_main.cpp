@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         bool localized=false;
         tf::StampedTransform transform;
         try{
-            listener.lookupTransform("map",prefix+"base_link", 
+            listener.lookupTransform("map",prefix+"/base_link", 
                                      ros::Time(0), transform);
             localized=true;
         }

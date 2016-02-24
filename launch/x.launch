@@ -1,0 +1,15 @@
+<launch>
+    <node pkg="speed_control" name="speed" type="speed_controller" ns="robot1">
+        <param name="private_name" value="robot1"/>
+        </node>
+    <node pkg="speed_control" name="speed" type="speed_controller" ns="robot2">
+        <param name="private_name" value="robot2"/>
+        </node>
+    <node pkg="speed_control" name="speed" type="speed_controller" ns="robot3">
+        <param name="private_name" value="robot3"/>
+        </node>
+    <node pkg="speed_control" name="speed" type="speed_controller" ns="robot4">
+        <param name="private_name" value="robot4"/>
+        </node>
+    
+</launch>
