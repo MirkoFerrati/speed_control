@@ -32,14 +32,14 @@ int main(int argc, char **argv)
     }
     else
         prefix=agent_name;
-    ros::Rate loop_rate(3);
+    ros::Rate loop_rate(30);
     
     while ( ros::ok() )
     {
         bool localized=false;
         tf::StampedTransform transform;
         try{
-            listener.lookupTransform("map",prefix+"/base_link", 
+            listener.lookupTransform("map",prefix+"base_link", 
                                      ros::Time(0), transform);
             localized=true;
         }

@@ -90,9 +90,9 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
     kp1=0.8;
-    kp2=1.5;
+    kp2=-1.5;
     ki1=0.5;
-    ki2=1.5;
+    ki2=-0.7;
     
 }
 
@@ -250,8 +250,8 @@ void waypoints_follower::run()
         }
         twist.linear.x = std::min(twist.linear.x,MAX_TWIST_LINEAR);
         comand_pub.publish(twist);
-        ROS_DEBUG_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
-        ROS_DEBUG_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
+        ROS_INFO_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
+        ROS_INFO_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
         
         ros::spinOnce();
 }
