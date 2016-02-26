@@ -33,7 +33,8 @@ int main(int argc, char **argv)
     else
         prefix=agent_name;
     ros::Rate loop_rate(30);
-    
+    if (prefix.back()!='/')
+        prefix.push_back('/');
     while ( ros::ok() )
     {
         bool localized=false;

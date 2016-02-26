@@ -42,8 +42,12 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
         next_target.z=msg.z;
         return;
     }
-    ROS_INFO_STREAM("new target added "<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
-    targets.push_back(msg);
+    //HACK FOR REAL WORLD
+    geometry_msgs::Point hack_msg=msg;
+    hack_msg.x=hack_msg.x/10.0;
+    hack_msg.y=hack_msg.y/10.0;
+    ROS_INFO_STREAM("new target added "<<hack_msg.x<<" "<<hack_msg.y<<" "<<int(msg.z)%1000);
+    targets.push_back(hack_msg);
     if (!active)
         activate();
 }
