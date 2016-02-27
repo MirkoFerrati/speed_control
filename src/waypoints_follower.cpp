@@ -93,10 +93,10 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     command_sub = n.subscribe<std_msgs::String>("command",1,&waypoints_follower::command_manager,this);
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
-    kp1=0.8;
+    kp1=0.7;
     kp2=-1.5;
-    ki1=0.5;
-    ki2=-0.7;
+    ki1=0.2;
+    ki2=-1.5;
     
 }
 
@@ -151,6 +151,7 @@ void waypoints_follower::run()
             straight=true;
             turning=false;
         }
+        
         /* More complex implementation, for the future, it chooses speed and angular radius
         if (distance(next_target)<TURNING_RADIUS && !turning && targets.size()>0 && !start_new_target) //Will not use circle if this is the last target or if we are starting now
         {
@@ -253,6 +254,11 @@ void waypoints_follower::run()
             }
         }
         twist.linear.x = std::min(twist.linear.x,MAX_TWIST_LINEAR);
+        if (distance(next_target)<0.05)
+        {
+            ros::spinOnce();
+            return;
+        }
         comand_pub.publish(twist);
         ROS_INFO_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
         ROS_INFO_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
