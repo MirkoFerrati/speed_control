@@ -1,12 +1,12 @@
 <launch>
-    <node pkg="speed_control" output="screen" name="speed" type="speed_controller" ns="robot1">
-        <param name="private_name" value="robot1"/>
+    <node pkg="speed_control" output="screen" name="speed" type="speed_controller" ns="iRobot_1">
+        <param name="private_name" value="iRobot_1"/>
         </node>
-    <node pkg="speed_control" name="speed" output="screen" type="speed_controller" ns="robot2">
-        <param name="private_name" value="robot2"/>
+    <node pkg="speed_control" name="speed" output="screen" type="speed_controller" ns="iRobot_2">
+        <param name="private_name" value="iRobot_2"/>
         </node>
-    <node pkg="speed_control" name="speed" type="speed_controller" output="screen" ns="robot3">
-        <param name="private_name" value="robot3"/>
+    <node pkg="speed_control" name="speed" type="speed_controller" output="screen" ns="iRobot_3">
+        <param name="private_name" value="iRobot_3"/>
         </node>
     
 </launch>

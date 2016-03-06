@@ -42,10 +42,9 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
         next_target.z=msg.z;
         return;
     }
-    //HACK FOR REAL WORLD
     geometry_msgs::Point hack_msg=msg;
-    hack_msg.x=hack_msg.x/10.0;
-    hack_msg.y=hack_msg.y/10.0;
+    hack_msg.x=hack_msg.x;
+    hack_msg.y=hack_msg.y;
     ROS_INFO_STREAM("new target added "<<hack_msg.x<<" "<<hack_msg.y<<" "<<int(msg.z)%1000);
     targets.push_back(hack_msg);
     if (!active)
@@ -93,7 +92,7 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     command_sub = n.subscribe<std_msgs::String>("command",1,&waypoints_follower::command_manager,this);
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
-    kp1=0.7;
+    kp1=0.2;
     kp2=-1.5;
     ki1=0.2;
     ki2=-1.5;
@@ -115,9 +114,9 @@ void waypoints_follower::init()
 void waypoints_follower::run()
 {
     
-    const double MAX_TWIST_LINEAR = 1.0;
+    const double MAX_TWIST_LINEAR = 0.4;
     const double MAX_TWIST_ANGULAR = 0.5;
-    const double TURNING_RADIUS=0.4;
+    const double TURNING_RADIUS=0.45;
 
         if (!active) return;
 //         ROS_INFO("active");
@@ -260,8 +259,8 @@ void waypoints_follower::run()
             return;
         }
         comand_pub.publish(twist);
-        ROS_INFO_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
-        ROS_INFO_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
+        //ROS_INFO_STREAM("controller run xt: "<<xtarget<<" yt: "<<ytarget<<" x: "<<x<<" y: "<<y<<" t "<<next_target.z);
+        //ROS_INFO_STREAM("controller run theta:"<<theta<<" error "<<theta_err<<" v: "<<twist.linear.x<<" w: "<<twist.angular.z);
         
         ros::spinOnce();
 }
