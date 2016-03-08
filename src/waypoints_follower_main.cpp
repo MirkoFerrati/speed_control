@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     }
     else
         prefix=agent_name;
-    ros::Rate loop_rate(30);
+    ros::Rate loop_rate(100);
     if (prefix.back()!='/')
         prefix.push_back('/');
     while ( ros::ok() )

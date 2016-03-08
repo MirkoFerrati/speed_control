@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<launch>
+	<node name="tf1" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /robot1/odom 100"/>
+
+	<node name="tf2" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /robot2/odom 100"/>
+
+	<node name="tf3" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /robot3/odom 100"/>
+
+        <node name="tf4" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /robot4/odom 100"/>        
+        
+</launch>

@@ -92,10 +92,10 @@ waypoints_follower::waypoints_follower(double max_speed, double reached_threshol
     command_sub = n.subscribe<std_msgs::String>("command",1,&waypoints_follower::command_manager,this);
     deactivation_reason=deactivate_reason::NO_MORE_TARGETS;
     localized=false;
-    kp1=0.2;
+    kp1=1.1;
     kp2=-1.5;
-    ki1=0.2;
-    ki2=-1.5;
+    ki1=0.08;
+    ki2=-0.9;//1.5;
     
 }
 
@@ -114,9 +114,9 @@ void waypoints_follower::init()
 void waypoints_follower::run()
 {
     
-    const double MAX_TWIST_LINEAR = 0.4;
+    const double MAX_TWIST_LINEAR = 0.6;
     const double MAX_TWIST_ANGULAR = 0.5;
-    const double TURNING_RADIUS=0.45;
+    const double TURNING_RADIUS=0.35;
 
         if (!active) return;
 //         ROS_INFO("active");
@@ -211,7 +211,8 @@ void waypoints_follower::run()
         {
             //either keep publishing same rotation and speed or feedback on the circle information
             twist.linear.x=desired_speed*(1+ki1*(TURNING_RADIUS-length));
-            twist.angular.z=-ki2*sin(desired_heading-theta);
+            //twist.linear.x = std::min(0.5*twist.linear.x,MAX_TWIST_LINEAR);
+	    twist.angular.z=-ki2*sin(desired_heading-theta);
             theta_err=desired_heading-theta;
             if (fabs(desired_heading-theta)<0.2 )//|| distance())
             {
