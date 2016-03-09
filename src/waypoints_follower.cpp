@@ -6,7 +6,7 @@
 #include <math.h>
 #include <mutex>
 #include <speed_control/config_toolConfig.h>
-#include <mrtstar/locking.h>
+#include <mrfert/locking.h>
 
 
 void waypoints_follower::config_callback(speed_control::config_toolConfig &config, uint32_t level) {
@@ -42,13 +42,13 @@ void waypoints_follower::target_manager(const geometry_msgs::Point & msg)
         next_target.z=msg.z;
         return;
     }
-    ROS_INFO_STREAM("new target added "<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
+    ROS_INFO_STREAM("new target added (MAP srs) "<<msg.x<<" "<<msg.y<<" "<<int(msg.z)%1000);
     targets.push_back(msg);
     if (!active)
         activate();
 }
 
-void waypoints_follower::setTargetCallback(const mrtstar::locking::ConstPtr& targets)
+void waypoints_follower::setTargetCallback(const mrfert::locking::ConstPtr& targets)
 {
     std::unique_lock<std::mutex>(targets_mtx);
     if (targets->command=="switch")
@@ -65,7 +65,6 @@ void waypoints_follower::setTargetCallback(const mrtstar::locking::ConstPtr& tar
         target_manager(target_temp);
     }
 }
-
 
 //TODO why does polygon use Point32 instead of Point?!?!
 void waypoints_follower::setTargetCallback(const geometry_msgs::PolygonConstPtr& targets)
@@ -102,7 +101,7 @@ void waypoints_follower::init()
     f = boost::bind(&waypoints_follower::config_callback, this, _1, _2);   
     server.setCallback(f);
 //     target_sub = this->n.subscribe<geometry_msgs::Polygon>("targets",10,&waypoints_follower::setTargetCallback,this);
-    target_sub = this->n.subscribe<mrtstar::locking>("targets",10,&waypoints_follower::setTargetCallback,this);
+    target_sub = this->n.subscribe<mrfert::locking>("targets",10,&waypoints_follower::setTargetCallback,this);
     comand_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);  
     straight=turning=false;
 }
@@ -142,7 +141,7 @@ void waypoints_follower::run()
             
             xtarget = next_target.x;
             ytarget = next_target.y;
-            ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
+            ROS_INFO_STREAM("starting new target (MAP srs) "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
             
             straight=true;
             turning=false;
@@ -198,7 +197,7 @@ void waypoints_follower::run()
             if(desired_speed>MAX_TWIST_LINEAR) desired_speed=MAX_TWIST_LINEAR;
             desired_speed=(current_speed+next_speed)/2.0;
             twist.linear.x=desired_speed;
-            ROS_INFO_STREAM("starting turning from near "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000<< "to next target");
+            ROS_INFO_STREAM("starting turning from near (MAP srs) "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000<< "to next target");
         }
         double length = distance(next_target);
         double theta_err;
@@ -224,7 +223,7 @@ void waypoints_follower::run()
                 xtarget = next_target.x;
                 ytarget = next_target.y;
                 straight=true;
-                ROS_INFO_STREAM("starting new target "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
+                ROS_INFO_STREAM("starting new target (MAP srs) "<<xtarget<< " " <<ytarget<<" "<<int(next_target.z)%1000);
                 
                 ROS_INFO("starting straight");
                 

@@ -54,6 +54,7 @@ int main(int argc, char **argv)
         if (localized)
         {
             controller.setPosition(o.getX(),o.getY(),yaw);
+	    //std::cout << agent_name << " current position (Map srs) " << o.getX() << " " << o.getY() << " " << yaw << std::endl;
             controller.run();
         }
         ros::spinOnce();

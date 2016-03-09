@@ -8,7 +8,7 @@
 
 #include <geometry_msgs/Polygon.h>
 #include <speed_control/config_toolConfig.h>
-#include <mrtstar/locking.h>
+#include <mrfert/locking.h>
 #include <dynamic_reconfigure/server.h>
 #include <ros/ros.h>
 #include <std_msgs/String.h>
@@ -66,7 +66,7 @@ private:
     geometry_msgs::Twist twist;
 public:
     waypoints_follower(double max_speed, double reached_threshold);
-    void setTargetCallback(const mrtstar::locking::ConstPtr& targets);    
+    void setTargetCallback(const mrfert::locking::ConstPtr& targets);    
     void setTargetCallback(const geometry_msgs::PolygonConstPtr& targets);
     void config_callback(speed_control::config_toolConfig &config, uint32_t level);
     void command_manager(const std_msgs::StringConstPtr & msg);
